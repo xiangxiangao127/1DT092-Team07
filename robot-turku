@@ -1,0 +1,107 @@
+package ev3.project;
+import lejos.hardware.sensor.EV3ColorSensor;
+import lejos.hardware.port.*;
+import lejos.hardware.motor.*;
+import lejos.hardware.port.SensorPort;
+import lejos.robotics.SampleProvider;
+import lejos.utility.Delay;
+
+public class ASN
+{ 
+    public static void main(String[] args) 
+    {
+        EV3ColorSensor Color = new EV3ColorSensor(SensorPort.S2); //instant a color sensor class  
+        Color.setCurrentMode("RGB");        //set COlor sensor work as RGB mode    
+        
+        UnregulatedMotor motorA = new UnregulatedMotor(MotorPort.A);        
+        UnregulatedMotor motorB = new UnregulatedMotor(MotorPort.B);//tow wheel's motor                
+        
+        EV3LargeRegulatedMotor motorC = new EV3LargeRegulatedMotor(MotorPort.C);//the motor for unload
+  
+        while((Rvalue(Color) - 0.1) < (RGBvalue(Color)/3))    //if sensor don't get more red, it   
+        {                                                     //means on the way to warehouse,                 
+                                                              //so following the black line according the RGB value   
+             //System.out.printf("%.2f\n",Rvalue(Color) - Gvalue(Color));   
+             int a = (int) ( (1 - RGBvalue(Color)) * 40);   
+             int b = (int) ( (RGBvalue(Color)) * 40);         
+             
+             motorA.setPower(a);        //give the processed RGB value to motor       
+             motorB.setPower(b);        //for control two wheel's speed       
+             
+         }    
+         
+         if((Rvalue(Color) - 0.1) > (RGBvalue(Color)/3))   //if sensor get more red, it                
+                                                           //means at the warehouse, so   
+         {                                                 //close the sensor port and stop   
+             Color.close();                                //the wheel's motor,            
+             
+             motorA.setPower(0);         
+             motorB.setPower(0);                  
+             
+             motorC.rotate(120);        //unload the goods and close          
+             motorC.close();   
+             //System.exit(0);  
+          }    
+             motorA.backward();   
+             motorB.backward();    
+             
+             motorA.setPower(30);  
+             motorB.setPower(30);  
+             Delay.msDelay(90);         //back a little out warehouse  
+             motorA.setPower(0);        
+             motorB.setPower(0);    
+             
+             System.out.println("I'm back!");  
+             Delay.msDelay(3000);
+             
+             while((Gvalue(Color) - 0.15) < Bvalue(Color))  
+             {   
+                 System.out.printf("%.2f\n",Rvalue(Color) - Gvalue(Color));   
+                 int a = (int) ( (1 - RGBvalue(Color)) * 40);   
+                 int b = (int) ( (RGBvalue(Color)) * 40);        
+                 
+                 motorB.setPower(a);        //give the processed RGB value to motor       
+                 motorA.setPower(b);        //for control two wheel's speed            
+             }  
+             if((Gvalue(Color) - 0.15) > Rvalue(Color))   //if sensor get more green, it    
+                                                          //means at the warehouse, so    
+                 {                                        //close the sensor port and stop   
+                 Color.close();                          //the wheel's motor,      
+                 
+                 motorA.stop();   
+                 motorB.stop();
+                 
+                 motorA.close();    
+                 motorB.close();
+                 
+                 }
+ 
+     }   
+     private static float RGBvalue(SampleProvider sp)  //get the sum RGB value 
+     {  
+         float [] sample = new float[sp.sampleSize()];  
+         sp.fetchSample(sample,0);  
+         return sample[0]+sample[1]+sample[2]; 
+     }
+     
+     private static float Rvalue(SampleProvider sp)   //get the Red value 
+     {  
+         float [] sample = new float[sp.sampleSize()];  
+         sp.fetchSample(sample,0);  
+         return sample[0]; 
+     }  
+     
+     private static float Gvalue(SampleProvider sp)   //get the Green value 
+     {  
+         float [] sample = new float[sp.sampleSize()];  
+         sp.fetchSample(sample,0);  
+         return sample[1]; 
+     }  
+     
+     private static float Bvalue(SampleProvider sp)   //get the Blue value 
+     {  
+         float [] sample = new float[sp.sampleSize()];  
+         sp.fetchSample(sample,0);  
+         return sample[2]; 
+     }
+}
